@@ -1,0 +1,9 @@
+
+Usage:
+
+run 'determine_hidraw_number.py' to find the device's <number>.
+chmod 777 /dev/hidraw<number>
+roslaunch razer_hydra hydra.launch device:=/dev/hidraw<number>
+
+
+

@@ -1,0 +1,10 @@
+<launch>
+  <arg name="device" default="/dev/hidraw0" />
+  <arg name="tf" default="false" />
+
+  <node pkg="razer_hydra" type="driver" name="razer_hydra_driver" output="screen" >
+    <param name="device" type="string" value="$(arg device)" />
+    <param name="publish_tf" type="bool" value="$(arg tf)" />
+  </node>
+
+</launch>
