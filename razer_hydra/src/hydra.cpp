@@ -66,6 +66,11 @@ RazerHydra::RazerHydra()
 : hidraw_fd(0)
 {
   ros::Time::init();  
+  for (int i = 0; i < 2; i++)
+  {
+    pos[i] = prev_pos[i] = tf::Vector3(0,0,0);
+    quat[i] = prev_quat[i] = tf::Quaternion(0,0,0,1);
+  }
 }
 
 RazerHydra::~RazerHydra()
@@ -166,11 +171,16 @@ bool RazerHydra::init(const char *device)
     return attempt < 60;
 }
 
-bool RazerHydra::poll(uint32_t ms_to_wait)
+bool RazerHydra::poll(uint32_t ms_to_wait, float lambda)
 {
   if (hidraw_fd < 0)
   {
     ROS_ERROR("couldn't poll");
+    return false;
+  }
+  if(lambda < 0 || lambda > 1)
+  {
+    ROS_ERROR("Filter value for lambda must be between zero and 1. Aborting.");
     return false;
   }
   ros::Time t_start(ros::Time::now());
@@ -225,6 +235,15 @@ bool RazerHydra::poll(uint32_t ms_to_wait)
         tf::Matrix3x3 mat(q);
         mat = ros_to_razer*mat*tf::Matrix3x3(tf::createQuaternionFromRPY(0, 0, M_PI_2));
         mat.getRotation(quat[i]);
+      }
+
+      // Do some filtering...
+      for (int i = 0; i < 2; i++)
+      {
+        pos[i] = (1-lambda)*prev_pos[i] + lambda*pos[i];
+        quat[i] = prev_quat[i].slerp(quat[i], lambda);
+        prev_pos[i] = pos[i];
+        prev_quat[i] = quat[i];
       }
 
 
