@@ -1,0 +1,2 @@
+ATTRS{idProduct}=="0300",ATTRS{idVendor}=="1532",ATTR{bInterfaceNumber}=="00",TAG="hydra-tracker"
+SUBSYSTEM=="hidraw",TAGS=="hydra-tracker", MODE="0666", SYMLINK+="hydra"

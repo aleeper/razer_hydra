@@ -1,5 +1,5 @@
 <launch>
-  <arg name="device" default="/dev/hidraw0" />
+  <arg name="device" default="/dev/hydra" />
   <arg name="tf" default="false" />
 
   <node pkg="razer_hydra" type="driver" name="razer_hydra_driver" output="screen" >

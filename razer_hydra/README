@@ -1,7 +1,14 @@
-
 Usage:
 
-run 'determine_hidraw_number.py' to find the device's <number>.
+Option 1: 
+Run the configure script: ./configure_udev_rules
+When the hydra is plugged in, the udev rules create a symlink to /dev/hydra
+/dev/hydra is the default device in the hydra.launch file, so you can just run:
+roslaunch razer_hydra hydra.launch 
+
+
+Option 2: Manual configuration
+run 'config/determine_hidraw_number.py' to find the device's <number>.
 chmod 777 /dev/hidraw<number>
 roslaunch razer_hydra hydra.launch device:=/dev/hidraw<number>
 

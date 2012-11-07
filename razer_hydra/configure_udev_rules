@@ -1,0 +1,3 @@
+sudo cp config/99-hydra.rules /etc/udev/rules.d/ 
+sudo udevadm control --reload-rules
+
