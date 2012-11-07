@@ -55,14 +55,16 @@ public:
   int hidraw_fd;
 
   bool init(const char *device);
-  bool poll(uint32_t ms_to_wait);
+  bool poll(uint32_t ms_to_wait, float lambda = 0.5);
 
   int16_t raw_pos[6], raw_quat[8];
   uint8_t raw_buttons[2];
   int16_t raw_analog[6];
 
   tf::Vector3 pos[2];
+  tf::Vector3 prev_pos[2];
   tf::Quaternion quat[2];
+  tf::Quaternion prev_quat[2];
   float analog[6];
   uint8_t buttons[14];
 };

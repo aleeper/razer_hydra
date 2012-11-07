@@ -49,6 +49,11 @@ int main(int argc, char **argv)
     n_private.param<std::string>("device", device, "/dev/hidraw0");
     bool publish_tf = false;
     n_private.param<bool>("publish_tf", publish_tf, false);
+    int polling_ms = 10;
+    n_private.param<int>("polling_ms", polling_ms, 10);
+    double lambda_filter = 0.5;
+    n_private.param<double>("lambda_filter", lambda_filter, 0.5);
+
 
     // Initialize ROS stuff
     ros::Publisher raw_pub = n.advertise<razer_hydra::Raw>("hydra_raw", 1);
@@ -61,64 +66,64 @@ int main(int argc, char **argv)
     ROS_INFO("opening hydra on %s", device.c_str());
     if (!hydra.init(device.c_str()))
     {
-        ROS_FATAL("couldn't open hydra on %s", device.c_str());
-        return 1;
+      ROS_FATAL("couldn't open hydra on %s", device.c_str());
+      return 1;
     }
     ROS_INFO("starting stream...");
     while (n.ok())
     {
-        if (hydra.poll(10))
+      if (hydra.poll(polling_ms, lambda_filter))
+      {
+        razer_hydra::Raw msg;
+        msg.header.stamp = ros::Time::now();
+        for (int i = 0; i < 6; i++)
+          msg.pos[i] = hydra.raw_pos[i];
+        for (int i = 0; i < 8; i++)
+          msg.quat[i] = hydra.raw_quat[i];
+        for (int i = 0; i < 2; i++)
+          msg.buttons[i] = hydra.raw_buttons[i];
+        for (int i = 0; i < 6; i++)
+          msg.analog[i] = hydra.raw_analog[i];
+        raw_pub.publish(msg);
+
+        razer_hydra::Hydra h_msg;
+        h_msg.header.stamp = msg.header.stamp;
+        for (int i = 0; i < 2; i++)
+          tf::transformTFToMsg(tf::Transform(hydra.quat[i], hydra.pos[i]),
+                           h_msg.paddles[i].transform);
+        for (int i = 0; i < 7; i++)
         {
-            razer_hydra::Raw msg;
-            msg.header.stamp = ros::Time::now();
-            for (int i = 0; i < 6; i++)
-                msg.pos[i] = hydra.raw_pos[i];
-            for (int i = 0; i < 8; i++)
-                msg.quat[i] = hydra.raw_quat[i];
-            for (int i = 0; i < 2; i++)
-                msg.buttons[i] = hydra.raw_buttons[i];
-            for (int i = 0; i < 6; i++)
-                msg.analog[i] = hydra.raw_analog[i];
-            raw_pub.publish(msg);
-
-            razer_hydra::Hydra h_msg;
-            h_msg.header.stamp = msg.header.stamp;
-            for (int i = 0; i < 2; i++)
-                tf::transformTFToMsg(tf::Transform(hydra.quat[i], hydra.pos[i]),
-                                 h_msg.paddles[i].transform);
-            for (int i = 0; i < 7; i++)
-            {
-                h_msg.paddles[0].buttons[i] = hydra.buttons[i];
-                h_msg.paddles[1].buttons[i] = hydra.buttons[i+7];
-            }
-            for (int i = 0; i < 2; i++)
-            {
-                h_msg.paddles[0].joy[i] = hydra.analog[i];
-                h_msg.paddles[1].joy[i] = hydra.analog[i+3];
-            }
-            h_msg.paddles[0].trigger = hydra.analog[2];
-            h_msg.paddles[1].trigger = hydra.analog[5];
-            calib_pub.publish(h_msg);
-
-            if(broadcaster)
-            {
-                std::vector<geometry_msgs::TransformStamped> transforms;
-                transforms.resize(2);
-                geometry_msgs::TransformStamped ts;
-
-                std::string frames[2] = {"hydra_left", "hydra_right"};
-                for(int kk = 0; kk < 2; kk++)
-                {
-                    transforms[kk].transform = h_msg.paddles[kk].transform;
-                    transforms[kk].header.stamp = h_msg.header.stamp;
-                    transforms[kk].header.frame_id = "hydra_base";
-                    transforms[kk].child_frame_id = frames[kk];
-                }
-                broadcaster->sendTransform(transforms);
-            }
-
-            ros::spinOnce();
+          h_msg.paddles[0].buttons[i] = hydra.buttons[i];
+          h_msg.paddles[1].buttons[i] = hydra.buttons[i+7];
         }
+        for (int i = 0; i < 2; i++)
+        {
+          h_msg.paddles[0].joy[i] = hydra.analog[i];
+          h_msg.paddles[1].joy[i] = hydra.analog[i+3];
+        }
+        h_msg.paddles[0].trigger = hydra.analog[2];
+        h_msg.paddles[1].trigger = hydra.analog[5];
+        calib_pub.publish(h_msg);
+
+        if(broadcaster)
+        {
+          std::vector<geometry_msgs::TransformStamped> transforms;
+          transforms.resize(2);
+          geometry_msgs::TransformStamped ts;
+
+          std::string frames[2] = {"hydra_left", "hydra_right"};
+          for(int kk = 0; kk < 2; kk++)
+          {
+            transforms[kk].transform = h_msg.paddles[kk].transform;
+            transforms[kk].header.stamp = h_msg.header.stamp;
+            transforms[kk].header.frame_id = "hydra_base";
+            transforms[kk].child_frame_id = frames[kk];
+          }
+          broadcaster->sendTransform(transforms);
+        }
+
+        ros::spinOnce();
+      }
     }
 
     // clean up
