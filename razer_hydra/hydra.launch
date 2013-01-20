@@ -4,7 +4,7 @@
   <arg name="ms" default="10" />
   <arg name="lambda" default="0.5" />
 
-  <node pkg="razer_hydra" type="driver" name="razer_hydra_driver" output="screen" >
+  <node pkg="razer_hydra" type="hydra_node" name="razer_hydra_driver" output="screen" >
     <param name="device"        type="string" value="$(arg device)" />
     <param name="publish_tf"    type="bool"   value="$(arg tf)" />
     <param name="polling_ms"    type="int"    value="$(arg ms)" />
