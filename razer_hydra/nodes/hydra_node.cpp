@@ -29,7 +29,7 @@
 #include <string>
 #include <ros/ros.h>
 #include "razer_hydra/hydra.h"
-#include "razer_hydra/Raw.h"
+#include "razer_hydra/HydraRaw.h"
 #include "razer_hydra/Hydra.h"
 #include "tf/tf.h"
 
@@ -56,7 +56,7 @@ int main(int argc, char **argv)
 
 
     // Initialize ROS stuff
-    ros::Publisher raw_pub = n.advertise<razer_hydra::Raw>("hydra_raw", 1);
+    ros::Publisher raw_pub = n.advertise<razer_hydra::HydraRaw>("hydra_raw", 1);
     ros::Publisher calib_pub = n.advertise<razer_hydra::Hydra>("hydra_calib", 1);
     tf::TransformBroadcaster *broadcaster = 0;
     if(publish_tf) broadcaster = new tf::TransformBroadcaster();
@@ -74,7 +74,7 @@ int main(int argc, char **argv)
     {
       if (hydra.poll(polling_ms, lambda_filter))
       {
-        razer_hydra::Raw msg;
+        razer_hydra::HydraRaw msg;
         msg.header.stamp = ros::Time::now();
         for (int i = 0; i < 6; i++)
           msg.pos[i] = hydra.raw_pos[i];
