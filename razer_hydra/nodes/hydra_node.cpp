@@ -53,7 +53,13 @@ int main(int argc, char **argv)
     n_private.param<int>("polling_ms", polling_ms, 10);
     double lambda_filter = 0.5;
     n_private.param<double>("lambda_filter", lambda_filter, 0.5);
+    double offset_linear[3];
+    n_private.param<double>("offset_x", offset_linear[0], 0.0);
+    n_private.param<double>("offset_y", offset_linear[1], 0.0);
+    n_private.param<double>("offset_z", offset_linear[2], 0.0);
+    tf::Vector3 offset(offset_linear[0], offset_linear[1], offset_linear[2]);
 
+    ROS_INFO("Setting linear offset [%.3f, %.3f, %.3f]", offset.x(), offset.y(), offset.z());
 
     // Initialize ROS stuff
     ros::Publisher raw_pub = n.advertise<razer_hydra::HydraRaw>("hydra_raw", 1);
@@ -86,11 +92,18 @@ int main(int argc, char **argv)
           msg.analog[i] = hydra.raw_analog[i];
         raw_pub.publish(msg);
 
+        std::vector<geometry_msgs::TransformStamped> transforms(4);
+
         razer_hydra::Hydra h_msg;
         h_msg.header.stamp = msg.header.stamp;
         for (int i = 0; i < 2; i++)
-          tf::transformTFToMsg(tf::Transform(hydra.quat[i], hydra.pos[i]),
-                           h_msg.paddles[i].transform);
+        {
+          tf::Transform transform(hydra.quat[i], hydra.pos[i]);
+          tf::transformTFToMsg(transform, transforms[i].transform);
+          transform.setOrigin(transform.getOrigin() + transform.getBasis()*offset);
+          tf::transformTFToMsg(transform, transforms[2+i].transform);
+          h_msg.paddles[i].transform = transforms[i].transform;
+        }
         for (int i = 0; i < 7; i++)
         {
           h_msg.paddles[0].buttons[i] = hydra.buttons[i];
@@ -107,18 +120,14 @@ int main(int argc, char **argv)
 
         if(broadcaster)
         {
-          std::vector<geometry_msgs::TransformStamped> transforms;
-          transforms.resize(2);
-          geometry_msgs::TransformStamped ts;
-
-          std::string frames[2] = {"hydra_left", "hydra_right"};
-          for(int kk = 0; kk < 2; kk++)
+          std::string frames[4] = {"hydra_left", "hydra_right", "hydra_left_offset", "hydra_right_offset"};
+          for(int kk = 0; kk < 4; kk++)
           {
-            transforms[kk].transform = h_msg.paddles[kk].transform;
             transforms[kk].header.stamp = h_msg.header.stamp;
             transforms[kk].header.frame_id = "hydra_base";
             transforms[kk].child_frame_id = frames[kk];
           }
+
           broadcaster->sendTransform(transforms);
         }
 

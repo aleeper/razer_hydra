@@ -3,12 +3,18 @@
   <arg name="tf" default="false" />
   <arg name="ms" default="10" />
   <arg name="lambda" default="0.5" />
+  <arg name="x" default="0.0" />
+  <arg name="y" default="0.0" />
+  <arg name="z" default="0.0" />
 
   <node pkg="razer_hydra" type="hydra_node" name="razer_hydra_driver" output="screen" >
     <param name="device"        type="string" value="$(arg device)" />
     <param name="publish_tf"    type="bool"   value="$(arg tf)" />
     <param name="polling_ms"    type="int"    value="$(arg ms)" />
     <param name="lambda_filter" type="double" value="$(arg lambda)" />
+    <param name="offset_x" type="double" value="$(arg x)" />
+    <param name="offset_y" type="double" value="$(arg y)" />
+    <param name="offset_z" type="double" value="$(arg z)" />
   </node>
 
 </launch>
