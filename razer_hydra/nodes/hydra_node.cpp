@@ -53,13 +53,30 @@ int main(int argc, char **argv)
     n_private.param<int>("polling_ms", polling_ms, 10);
     double lambda_filter = 0.5;
     n_private.param<double>("lambda_filter", lambda_filter, 0.5);
-    double offset_linear[3];
-    n_private.param<double>("offset_x", offset_linear[0], 0.0);
-    n_private.param<double>("offset_y", offset_linear[1], 0.0);
-    n_private.param<double>("offset_z", offset_linear[2], 0.0);
-    tf::Vector3 offset(offset_linear[0], offset_linear[1], offset_linear[2]);
+    double pivot_arr[3];
+    n_private.param<double>("pivot_x", pivot_arr[0], 0.0);
+    n_private.param<double>("pivot_y", pivot_arr[1], 0.0);
+    n_private.param<double>("pivot_z", pivot_arr[2], 0.0);
+    tf::Vector3 pivot_vec(pivot_arr[0], pivot_arr[1], pivot_arr[2]);
 
-    ROS_INFO("Setting linear offset [%.3f, %.3f, %.3f]", offset.x(), offset.y(), offset.z());
+    double grab_arr[3];
+    n_private.param<double>("grab_x", grab_arr[0], 0.0);
+    n_private.param<double>("grab_y", grab_arr[1], 0.0);
+    n_private.param<double>("grab_z", grab_arr[2], 0.0);
+    tf::Vector3 grab_vec(grab_arr[0], grab_arr[1], grab_arr[2]);
+
+    bool use_grab_frame = false;
+    n_private.param<bool>("use_grab_frame", use_grab_frame, false);
+
+    ROS_INFO("Setting pivot offset [%.3f, %.3f, %.3f]", pivot_vec.x(), pivot_vec.y(), pivot_vec.z());
+    ROS_INFO("Setting grab offset [%.3f, %.3f, %.3f]", grab_vec.x(), grab_vec.y(), grab_vec.z());
+    if(use_grab_frame)
+      ROS_INFO("Sending messages using the 'grab' frame.");
+    else
+      ROS_INFO("Sending messages using the 'pivot' frame.");
+
+    if(publish_tf)
+      ROS_INFO("Publishing frame data to TF.");
 
     // Initialize ROS stuff
     ros::Publisher raw_pub = n.advertise<razer_hydra::HydraRaw>("hydra_raw", 1);
@@ -98,11 +115,18 @@ int main(int argc, char **argv)
         h_msg.header.stamp = msg.header.stamp;
         for (int i = 0; i < 2; i++)
         {
-          tf::Transform transform(hydra.quat[i], hydra.pos[i]);
-          tf::transformTFToMsg(transform, transforms[i].transform);
-          transform.setOrigin(transform.getOrigin() + transform.getBasis()*offset);
-          tf::transformTFToMsg(transform, transforms[2+i].transform);
-          h_msg.paddles[i].transform = transforms[i].transform;
+          tf::Transform transform(hydra.quat[i], hydra.pos[i]); // original transform!
+          tf::Transform t_pivot = transform, t_grab = transform;
+
+          // pivot
+          t_pivot.setOrigin(transform.getOrigin() + transform.getBasis()*pivot_vec);
+          tf::transformTFToMsg(t_pivot, transforms[i].transform);
+
+          // grab point
+          t_grab.setOrigin(transform.getOrigin() + transform.getBasis()*grab_vec);
+          tf::transformTFToMsg(t_grab, transforms[2+i].transform);
+
+          h_msg.paddles[i].transform = use_grab_frame ? transforms[2+i].transform : transforms[i].transform;
         }
         for (int i = 0; i < 7; i++)
         {
@@ -120,7 +144,7 @@ int main(int argc, char **argv)
 
         if(broadcaster)
         {
-          std::string frames[4] = {"hydra_left", "hydra_right", "hydra_left_offset", "hydra_right_offset"};
+          std::string frames[4] = {"hydra_left_pivot", "hydra_right_pivot", "hydra_left_grab", "hydra_right_grab"};
           for(int kk = 0; kk < 4; kk++)
           {
             transforms[kk].header.stamp = h_msg.header.stamp;

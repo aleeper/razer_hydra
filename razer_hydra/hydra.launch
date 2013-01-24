@@ -3,18 +3,26 @@
   <arg name="tf" default="false" />
   <arg name="ms" default="10" />
   <arg name="lambda" default="0.5" />
-  <arg name="x" default="0.0" />
-  <arg name="y" default="0.0" />
-  <arg name="z" default="0.0" />
+  <arg name="px" default="0.04" />
+  <arg name="py" default="0.0" />
+  <arg name="pz" default="0.0" />
+  <arg name="gx" default="0.12" />
+  <arg name="gy" default="0.0" />
+  <arg name="gz" default="0.0" />
+  <arg name="use_grab_frame" default="true" />
 
   <node pkg="razer_hydra" type="hydra_node" name="razer_hydra_driver" output="screen" >
     <param name="device"        type="string" value="$(arg device)" />
     <param name="publish_tf"    type="bool"   value="$(arg tf)" />
     <param name="polling_ms"    type="int"    value="$(arg ms)" />
     <param name="lambda_filter" type="double" value="$(arg lambda)" />
-    <param name="offset_x" type="double" value="$(arg x)" />
-    <param name="offset_y" type="double" value="$(arg y)" />
-    <param name="offset_z" type="double" value="$(arg z)" />
+    <param name="pivot_x" type="double" value="$(arg px)" />
+    <param name="pivot_y" type="double" value="$(arg py)" />
+    <param name="pivot_z" type="double" value="$(arg pz)" />
+    <param name="grab_x"  type="double" value="$(arg gx)" />
+    <param name="grab_y"  type="double" value="$(arg gy)" />
+    <param name="grab_z"  type="double" value="$(arg gz)" />
+    <param name="use_grab_frame"  type="bool" value="$(arg use_grab_frame)" />
   </node>
 
 </launch>
