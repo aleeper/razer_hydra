@@ -2,7 +2,7 @@
   <arg name="device" default="/dev/hydra" />
   <arg name="tf" default="false" />
   <arg name="ms" default="10" />
-  <arg name="lambda" default="0.5" />
+  <arg name="lambda" default="0.2" />
   <arg name="px" default="0.04" />
   <arg name="py" default="0.0" />
   <arg name="pz" default="0.0" />
