@@ -55,7 +55,7 @@ public:
   int hidraw_fd;
 
   bool init(const char *device);
-  bool poll(uint32_t ms_to_wait, float lambda = 0.5);
+  bool poll(uint32_t ms_to_wait, float low_pass_corner_frequency = 4.0);
 
   int16_t raw_pos[6], raw_quat[8];
   uint8_t raw_buttons[2];

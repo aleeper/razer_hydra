@@ -51,8 +51,8 @@ int main(int argc, char **argv)
     n_private.param<bool>("publish_tf", publish_tf, false);
     int polling_ms = 10;
     n_private.param<int>("polling_ms", polling_ms, 10);
-    double lambda_filter = 0.5;
-    n_private.param<double>("lambda_filter", lambda_filter, 0.5);
+    double corner_freq = 4.0;
+    n_private.param<double>("corner_freq", corner_freq, 4.0);
     double pivot_arr[3];
     n_private.param<double>("pivot_x", pivot_arr[0], 0.0);
     n_private.param<double>("pivot_y", pivot_arr[1], 0.0);
@@ -95,7 +95,7 @@ int main(int argc, char **argv)
     ROS_INFO("starting stream...");
     while (n.ok())
     {
-      if (hydra.poll(polling_ms, lambda_filter))
+      if (hydra.poll(polling_ms, corner_freq))
       {
         razer_hydra::HydraRaw msg;
         msg.header.stamp = ros::Time::now();

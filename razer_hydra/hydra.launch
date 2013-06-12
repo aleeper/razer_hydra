@@ -1,8 +1,8 @@
 <launch>
   <arg name="device" default="/dev/hydra" />
-  <arg name="tf" default="false" />
-  <arg name="ms" default="10" />
-  <arg name="lambda" default="0.2" />
+  <arg name="publish_tf" default="false" />
+  <arg name="polling_ms" default="10" />
+  <arg name="corner_freq" default="3.0" />
   <arg name="px" default="0.04" />
   <arg name="py" default="0.0" />
   <arg name="pz" default="0.0" />
@@ -13,9 +13,9 @@
 
   <node pkg="razer_hydra" type="hydra_node" name="razer_hydra_driver" output="screen" >
     <param name="device"        type="string" value="$(arg device)" />
-    <param name="publish_tf"    type="bool"   value="$(arg tf)" />
-    <param name="polling_ms"    type="int"    value="$(arg ms)" />
-    <param name="lambda_filter" type="double" value="$(arg lambda)" />
+    <param name="publish_tf"    type="bool"   value="$(arg publish_tf)" />
+    <param name="polling_ms"    type="int"    value="$(arg polling_ms)" />
+    <param name="corner_freq"   type="double" value="$(arg corner_freq)" />
     <param name="pivot_x" type="double" value="$(arg px)" />
     <param name="pivot_y" type="double" value="$(arg py)" />
     <param name="pivot_z" type="double" value="$(arg pz)" />

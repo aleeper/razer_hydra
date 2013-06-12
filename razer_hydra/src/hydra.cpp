@@ -171,16 +171,21 @@ bool RazerHydra::init(const char *device)
     return attempt < 60;
 }
 
-bool RazerHydra::poll(uint32_t ms_to_wait, float lambda)
+bool RazerHydra::poll(uint32_t ms_to_wait, float low_pass_corner_frequency)
 {
   if (hidraw_fd < 0)
   {
-    ROS_ERROR("couldn't poll");
+    ROS_ERROR("hidraw device is not open, couldn't poll.");
     return false;
   }
-  if(lambda < 0 || lambda > 1)
+  if(ms_to_wait == 0)
   {
-    ROS_ERROR("Filter value for lambda must be between zero and 1. Aborting.");
+    ROS_ERROR("ms_to_wait must be at least 1.");
+    return false;
+  }
+  if(low_pass_corner_frequency <= 0)
+  {
+    ROS_ERROR("Corner frequency for low-pass filter must be greater than 0. Aborting.");
     return false;
   }
   ros::Time t_start(ros::Time::now());
@@ -237,11 +242,15 @@ bool RazerHydra::poll(uint32_t ms_to_wait, float lambda)
         mat.getRotation(quat[i]);
       }
 
-      // Do some filtering...
+      // Apply a single-pole low-pass filter, as described here:
+      // http://www.earlevel.com/main/2012/12/15/a-one-pole-filter/
+      float sample_rate = 1000.0/ms_to_wait;
+      float b1 = exp(-2.0 * M_PI * sample_rate / low_pass_corner_frequency);
+      float a0 = 1.0 - b1;
       for (int i = 0; i < 2; i++)
       {
-        pos[i] = (1-lambda)*prev_pos[i] + lambda*pos[i];
-        quat[i] = prev_quat[i].slerp(quat[i], lambda);
+        pos[i] = a0*pos[i] + b1*prev_pos[i];
+        quat[i] = prev_quat[i].slerp(quat[i], a0);
         prev_pos[i] = pos[i];
         prev_quat[i] = quat[i];
       }
