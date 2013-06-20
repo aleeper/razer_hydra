@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 
   while (!g_done)
   {
-    if (h.poll(10))
+    if (h.poll(10, 100))
     {
       printf("%.3f %.3f %.3f      %.3f %.3f %.3f\n",
              h.pos[0].x(), h.pos[0].y(), h.pos[0].z(),

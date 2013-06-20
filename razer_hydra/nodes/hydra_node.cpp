@@ -104,7 +104,7 @@ int main(int argc, char **argv)
       ROS_FATAL("couldn't open hydra on %s", device.c_str());
       return 1;
     }
-    ROS_INFO("starting stream...");
+    ROS_INFO("starting stream... (first packet takes a few seconds)");
     while (n.ok())
     {
       if (hydra.poll(polling_ms, corner_hz))

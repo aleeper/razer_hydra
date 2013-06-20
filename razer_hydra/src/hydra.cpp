@@ -63,17 +63,17 @@
 namespace razer_hydra {
 
 RazerHydra::RazerHydra()
-  : hidraw_fd(0), period_estimate(0.004)
+  : hidraw_fd(0)
 {
   ros::Time::init();
   last_cycle_start = ros::Time::now();
+  period_estimate.setFc(0.11, 1.0); // magic number for 50% mix at each step
+  period_estimate.setValue(0.004);
 
   for (int i = 0; i < 2; i++)
   {
     pos[i] = tf::Vector3(0,0,0);
-    filter_pos[i].zero();
     quat[i] = tf::Quaternion(0,0,0,1);
-    filter_quat[i].zero();
   }
 }
 
@@ -112,11 +112,11 @@ bool RazerHydra::init(const char *device)
         ROS_ERROR("couldn't open hidraw device");
         return false;
     }
-    ROS_INFO("opened hydra");
+    ROS_DEBUG("%s", (std::string("opened device") + std::string(device)).c_str());
 
     memset(&rpt_desc, 0x0, sizeof(rpt_desc));
-    memset(&info, 0x0, sizeof(info));
-    memset(buf, 0x0, sizeof(buf));
+    memset(&info,     0x0, sizeof(info));
+    memset(buf,       0x0, sizeof(buf));
 
     /*
     // Get Report Descriptor Size
@@ -147,7 +147,7 @@ bool RazerHydra::init(const char *device)
     if (res < 0)
         perror("HIDIOCGRAWNAME");
     else
-        printf("Raw Name: %s\n", buf);
+        ROS_DEBUG("Raw Name: %s\n", buf);
 
     // set feature to start it streaming
     memset(buf, 0x0, sizeof(buf));
@@ -167,11 +167,11 @@ bool RazerHydra::init(const char *device)
         }
         else
         {
-            ROS_INFO("started streaming");
+            ROS_INFO("Device stream is working.");
             break;
         }
     }
-    ROS_INFO("%d attempts", attempt);
+    ROS_DEBUG("%d attempts", attempt);
     return attempt < 60;
 }
 
@@ -203,13 +203,10 @@ bool RazerHydra::poll(uint32_t ms_to_wait, float low_pass_corner_hz)
     if (nread > 0)
     {
       static bool first_time = true;
-      float a0 = 0, a1 = 0, a2 = 0, b0 = 0, b1 = 0, b2 = 0;
       // Update average read period
-      b1 = exp(-2.0 * M_PI * 0.11); // magic number for 50% mix at each step
-      a0 = 1.0 - b1;
       if(!first_time) {
         float last_period = (ros::Time::now() - last_cycle_start).toSec();
-        period_estimate = a0*last_period + b1*period_estimate;
+        period_estimate.process(last_period);
         //ROS_INFO("last_cycle: %.4f sec, average: %.4f sec", last_period, period_estimate);
       }
       last_cycle_start = ros::Time::now();
@@ -218,7 +215,9 @@ bool RazerHydra::poll(uint32_t ms_to_wait, float low_pass_corner_hz)
         first_time = false;
         ROS_INFO("Got first data, everything should be working now!");
       }
-      float Fs = 1/period_estimate;
+
+      // Update filter frequencies
+      float Fs = 1/period_estimate.getValue();
       float Fc = low_pass_corner_hz;
       for (int i = 0; i < 2; i++)
       {
@@ -272,20 +271,7 @@ bool RazerHydra::poll(uint32_t ms_to_wait, float low_pass_corner_hz)
         mat.getRotation(quat[i]);
       }
 
-//      // Apply a single-pole low-pass filter, as described here, to orientation:
-//      // http://www.earlevel.com/main/2012/12/15/a-one-pole-filter/
-//      b1 = exp(-2.0 * M_PI * Fc / Fs);
-//      a0 = 1.0 - b1;
-//      for (int i = 0; i < 2; i++)
-//      {
-//        quat[i] = prev_quat[i].slerp(quat[i], a0);
-//        prev_quat[i] = quat[i];
-
-//        // Biquad filter is applied to position
-//        pos[i] = biquad_pos[i].process(pos[i]);
-
-//      }
-
+      // Apply filters
       for (int i = 0; i < 2; i++)
       {
         quat[i] = filter_quat[i].process(quat[i]);
@@ -314,7 +300,7 @@ bool RazerHydra::poll(uint32_t ms_to_wait, float low_pass_corner_hz)
     }
     else
     {
-      ros::Time to_sleep = last_cycle_start + ros::Duration(period_estimate*0.95);
+      ros::Time to_sleep = last_cycle_start + ros::Duration(period_estimate.getValue()*0.95);
       float sleep_duration = (to_sleep - ros::Time::now()).toSec();
       if(sleep_duration > 0)
       {

@@ -52,7 +52,7 @@ int main(int argc, char **argv)
   static int print_count = 0;
   while (!g_done)
   {
-    if (h.poll(10))
+    if (h.poll(10, 100))
     {
       char buf[1000];
       snprintf(buf, sizeof(buf),
