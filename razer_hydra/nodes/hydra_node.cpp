@@ -47,12 +47,24 @@ int main(int argc, char **argv)
     // Get configuration params
     string device;
     n_private.param<std::string>("device", device, "/dev/hidraw0");
+
     bool publish_tf = false;
     n_private.param<bool>("publish_tf", publish_tf, false);
-    int polling_ms = 10;
-    n_private.param<int>("polling_ms", polling_ms, 10);
-    double corner_freq = 4.0;
-    n_private.param<double>("corner_freq", corner_freq, 4.0);
+
+    int polling_ms = 5;
+    n_private.param<int>("polling_ms", polling_ms, 5);
+    if( polling_ms <= 0 ) {
+      ROS_WARN("polling_ms must be >= 1. Setting to default rate of 5 ms.");
+      polling_ms = 5;
+    }
+//    ros::Rate rate(1/(0.001*polling_ms));
+
+
+    double corner_hz = 2.5;
+    n_private.param<double>("corner_hz", corner_hz, 2.5);
+    ROS_INFO("Using filter corner frequency of %.1f Hz", corner_hz);
+
+
     double pivot_arr[3];
     n_private.param<double>("pivot_x", pivot_arr[0], 0.0);
     n_private.param<double>("pivot_y", pivot_arr[1], 0.0);
@@ -95,7 +107,7 @@ int main(int argc, char **argv)
     ROS_INFO("starting stream...");
     while (n.ok())
     {
-      if (hydra.poll(polling_ms, corner_freq))
+      if (hydra.poll(polling_ms, corner_hz))
       {
         razer_hydra::HydraRaw msg;
         msg.header.stamp = ros::Time::now();

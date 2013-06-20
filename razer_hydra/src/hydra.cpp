@@ -63,13 +63,17 @@
 namespace razer_hydra {
 
 RazerHydra::RazerHydra()
-: hidraw_fd(0)
+  : hidraw_fd(0), period_estimate(0.004)
 {
-  ros::Time::init();  
+  ros::Time::init();
+  last_cycle_start = ros::Time::now();
+
   for (int i = 0; i < 2; i++)
   {
-    pos[i] = prev_pos[i] = tf::Vector3(0,0,0);
-    quat[i] = prev_quat[i] = tf::Quaternion(0,0,0,1);
+    pos[i] = tf::Vector3(0,0,0);
+    filter_pos[i].zero();
+    quat[i] = tf::Quaternion(0,0,0,1);
+    filter_quat[i].zero();
   }
 }
 
@@ -171,7 +175,7 @@ bool RazerHydra::init(const char *device)
     return attempt < 60;
 }
 
-bool RazerHydra::poll(uint32_t ms_to_wait, float low_pass_corner_frequency)
+bool RazerHydra::poll(uint32_t ms_to_wait, float low_pass_corner_hz)
 {
   if (hidraw_fd < 0)
   {
@@ -183,20 +187,46 @@ bool RazerHydra::poll(uint32_t ms_to_wait, float low_pass_corner_frequency)
     ROS_ERROR("ms_to_wait must be at least 1.");
     return false;
   }
-  if(low_pass_corner_frequency <= 0)
+  if(low_pass_corner_hz <= std::numeric_limits<float>::epsilon())
   {
     ROS_ERROR("Corner frequency for low-pass filter must be greater than 0. Aborting.");
     return false;
   }
   ros::Time t_start(ros::Time::now());
+  ros::Time t_deadline(t_start + ros::Duration(0.001 * ms_to_wait));
 
   uint8_t buf[64];
-  while (ros::Time::now() < t_start + ros::Duration(0.001 * ms_to_wait))
+  while (ros::Time::now() < t_deadline)
   {
     ssize_t nread = read(hidraw_fd, buf, sizeof(buf));
     //ROS_INFO("read %d bytes", (int)nread);
     if (nread > 0)
     {
+      static bool first_time = true;
+      float a0 = 0, a1 = 0, a2 = 0, b0 = 0, b1 = 0, b2 = 0;
+      // Update average read period
+      b1 = exp(-2.0 * M_PI * 0.11); // magic number for 50% mix at each step
+      a0 = 1.0 - b1;
+      if(!first_time) {
+        float last_period = (ros::Time::now() - last_cycle_start).toSec();
+        period_estimate = a0*last_period + b1*period_estimate;
+        //ROS_INFO("last_cycle: %.4f sec, average: %.4f sec", last_period, period_estimate);
+      }
+      last_cycle_start = ros::Time::now();
+      if(first_time)
+      {
+        first_time = false;
+        ROS_INFO("Got first data, everything should be working now!");
+      }
+      float Fs = 1/period_estimate;
+      float Fc = low_pass_corner_hz;
+      for (int i = 0; i < 2; i++)
+      {
+        filter_pos[i].setFc(Fc, Fs);
+        filter_quat[i].setFc(Fc, Fs);
+      }
+
+      // Read data
       raw_pos[0] = *((int16_t *)(buf+8));
       raw_pos[1] = *((int16_t *)(buf+10));
       raw_pos[2] = *((int16_t *)(buf+12));
@@ -242,19 +272,25 @@ bool RazerHydra::poll(uint32_t ms_to_wait, float low_pass_corner_frequency)
         mat.getRotation(quat[i]);
       }
 
-      // Apply a single-pole low-pass filter, as described here:
-      // http://www.earlevel.com/main/2012/12/15/a-one-pole-filter/
-      float sample_rate = 1000.0/ms_to_wait;
-      float b1 = exp(-2.0 * M_PI * sample_rate / low_pass_corner_frequency);
-      float a0 = 1.0 - b1;
+//      // Apply a single-pole low-pass filter, as described here, to orientation:
+//      // http://www.earlevel.com/main/2012/12/15/a-one-pole-filter/
+//      b1 = exp(-2.0 * M_PI * Fc / Fs);
+//      a0 = 1.0 - b1;
+//      for (int i = 0; i < 2; i++)
+//      {
+//        quat[i] = prev_quat[i].slerp(quat[i], a0);
+//        prev_quat[i] = quat[i];
+
+//        // Biquad filter is applied to position
+//        pos[i] = biquad_pos[i].process(pos[i]);
+
+//      }
+
       for (int i = 0; i < 2; i++)
       {
-        pos[i] = a0*pos[i] + b1*prev_pos[i];
-        quat[i] = prev_quat[i].slerp(quat[i], a0);
-        prev_pos[i] = pos[i];
-        prev_quat[i] = quat[i];
+        quat[i] = filter_quat[i].process(quat[i]);
+        pos[i] = filter_pos[i].process(pos[i]);
       }
-
 
       analog[0] = raw_analog[0] / 32768.0;
       analog[1] = raw_analog[1] / 32768.0;
@@ -273,13 +309,23 @@ bool RazerHydra::poll(uint32_t ms_to_wait, float low_pass_corner_frequency)
         buttons[i*7+5] = (raw_buttons[i] & 0x20) ? 1 : 0;
         buttons[i*7+6] = (raw_buttons[i] & 0x40) ? 1 : 0;
       }
-        
+
       return true;
     }
     else
     {
-        //ROS_ERROR( "Error reading: %s\n", strerror( errno ) );
-        usleep(1000);
+      ros::Time to_sleep = last_cycle_start + ros::Duration(period_estimate*0.95);
+      float sleep_duration = (to_sleep - ros::Time::now()).toSec();
+      if(sleep_duration > 0)
+      {
+        //ROS_INFO("Data not ready, sleeping for %.6f sec", sleep_duration);
+        ros::Time::sleepUntil(to_sleep);
+      }
+      else {
+        //ROS_INFO("Data not ready, doing default sleep of 500 us");
+        usleep(250);
+      }
+
     }
   }
   //ROS_INFO("Ran out of time, returning!");
