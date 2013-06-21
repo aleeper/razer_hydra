@@ -1,13 +1,13 @@
 <package>
   <name>razer_hydra</name>
   <version>0.0.1</version>
-  <description>hydra</description>
-  <maintainer email="aleeper@willowgarage.com">Adam Leeper</maintainer>
+  <description>Unofficial driver and ROS node for Razer Hydra</description>
+  <maintainer email="adamleeper@gmail.com">Adam Leeper</maintainer>
 
   <license></license>
 
-  <url type="website"></url>
-  <!-- <url type="bugtracker"></url> -->
+  <url type="website">http://www.ros.org/wiki/razer_hydra</url>
+  <url type="bugtracker">https://github.com/aleeper/razer_hydra/issues</url>
 
   <author>Adam Leeper</author>
 
