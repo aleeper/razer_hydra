@@ -40,8 +40,10 @@ add_subdirectory(src)
 add_subdirectory(tools)
 add_subdirectory(nodes)
 
-install(DIRECTORY include/
-  DESTINATION include)
+install(DIRECTORY include/ DESTINATION include)
+
+install(DIRECTORY launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+install(DIRECTORY config DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
 #install(FILES
 #  plugin_description.xml

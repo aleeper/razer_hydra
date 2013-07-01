@@ -65,7 +65,7 @@ public:
 
   tf::Vector3 pos[2];
   tf::Quaternion quat[2];
-  BiQuadVector3 filter_pos[2];
+  OnePoleVector3 filter_pos[2];
   OnePoleQuaternion filter_quat[2];
   float analog[6];
   uint8_t buttons[14];
