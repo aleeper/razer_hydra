@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(razer_hydra)
 
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
 find_package(catkin REQUIRED COMPONENTS geometry_msgs tf roscpp genmsg)
 
 # include_directories(include ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
@@ -36,4 +40,10 @@ add_subdirectory(src)
 add_subdirectory(tools)
 add_subdirectory(nodes)
 
+install(DIRECTORY include/
+  DESTINATION include)
+
+#install(FILES
+#  plugin_description.xml
+#  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
