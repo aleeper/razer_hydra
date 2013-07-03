@@ -39,7 +39,7 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <linux/hidraw.h>
-#include <usb.h>
+#include <libusb-1.0/libusb.h>
 
 namespace razer_hydra
 {

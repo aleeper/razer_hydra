@@ -33,7 +33,7 @@
 #include "ros/assert.h"
 
 #include <errno.h>
-#include <usb.h>
+#include <libusb-1.0/libusb.h>
 #include <linux/types.h>
 #include <linux/input.h>
 #include <linux/hidraw.h>

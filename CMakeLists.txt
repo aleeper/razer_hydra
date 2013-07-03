@@ -9,6 +9,8 @@ find_package(catkin REQUIRED COMPONENTS geometry_msgs tf roscpp genmsg)
 
 # include_directories(include ${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS})
 
+find_package(PkgConfig)
+pkg_check_modules(PC_LIBUSB REQUIRED libusb-1.0)
 
 add_message_files(
   FILES
