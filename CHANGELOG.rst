@@ -2,8 +2,12 @@
 Changelog for package razer_hydra
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.0.4 (2013-07-04)
+------------------
+* adds pkg-config to package.xml
+
+0.0.3 (2013-07-02)
+------------------
 * fixed libusb depends
 
 0.0.2 (2013-07-01)
