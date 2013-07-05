@@ -2,6 +2,10 @@
 Changelog for package razer_hydra
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.0.5 (2013-07-04)
+------------------
+* actually updated the changelog
+
 0.0.4 (2013-07-04)
 ------------------
 * adds pkg-config to package.xml
