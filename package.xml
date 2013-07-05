@@ -1,6 +1,6 @@
 <package>
   <name>razer_hydra</name>
-  <version>0.0.3</version>
+  <version>0.0.4</version>
   <description>Unofficial driver and ROS node for Razer Hydra</description>
   <maintainer email="adamleeper@gmail.com">Adam Leeper</maintainer>
 
