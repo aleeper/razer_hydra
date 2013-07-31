@@ -33,6 +33,8 @@
 #include "razer_hydra/Hydra.h"
 #include "tf/tf.h"
 
+#include "sensor_msgs/Joy.h"
+
 // Visualization
 #include <tf/transform_broadcaster.h>
 
@@ -93,6 +95,7 @@ int main(int argc, char **argv)
     // Initialize ROS stuff
     ros::Publisher raw_pub = n.advertise<razer_hydra::HydraRaw>("hydra_raw", 1);
     ros::Publisher calib_pub = n.advertise<razer_hydra::Hydra>("hydra_calib", 1);
+    ros::Publisher joy_pub = n.advertise<sensor_msgs::Joy>("hydra_joy", 1);
     tf::TransformBroadcaster *broadcaster = 0;
     if(publish_tf) broadcaster = new tf::TransformBroadcaster();
 
@@ -109,6 +112,7 @@ int main(int argc, char **argv)
     {
       if (hydra.poll(polling_ms, corner_hz))
       {
+        // publish raw data
         razer_hydra::HydraRaw msg;
         msg.header.stamp = ros::Time::now();
         for (int i = 0; i < 6; i++)
@@ -123,6 +127,7 @@ int main(int argc, char **argv)
 
         std::vector<geometry_msgs::TransformStamped> transforms(4);
 
+        // publish calibrated data
         razer_hydra::Hydra h_msg;
         h_msg.header.stamp = msg.header.stamp;
         for (int i = 0; i < 2; i++)
@@ -166,6 +171,59 @@ int main(int argc, char **argv)
 
           broadcaster->sendTransform(transforms);
         }
+
+        // emulate PS3 joystick message
+        sensor_msgs::Joy joy_msg;
+
+        joy_msg.axes.resize(16);
+        joy_msg.buttons.resize(16);
+        joy_msg.header.stamp = h_msg.header.stamp;
+
+        // analog pads
+        // left
+        joy_msg.axes[0] = -h_msg.paddles[0].joy[0]; // x
+        joy_msg.axes[1] = h_msg.paddles[0].joy[1]; // y
+        joy_msg.buttons[1] = h_msg.paddles[0].buttons[6]; // push
+        //right
+        joy_msg.axes[2] = -h_msg.paddles[1].joy[0]; // x
+        joy_msg.axes[3] = h_msg.paddles[1].joy[1]; // y
+        joy_msg.buttons[2] = h_msg.paddles[1].buttons[6]; // push
+
+        // push buttons
+        joy_msg.buttons[7] = h_msg.paddles[0].buttons[1]; // left
+        joy_msg.buttons[5] = h_msg.paddles[0].buttons[3]; // right
+        joy_msg.buttons[6] = h_msg.paddles[0].buttons[2]; // down
+        joy_msg.buttons[4] = h_msg.paddles[0].buttons[4]; // up
+
+        joy_msg.buttons[15] = h_msg.paddles[1].buttons[1]; // square
+        joy_msg.buttons[13] = h_msg.paddles[1].buttons[3]; // circle
+        joy_msg.buttons[14] = h_msg.paddles[1].buttons[2]; // triangle
+        joy_msg.buttons[12] = h_msg.paddles[1].buttons[4]; // cross
+
+        // menu buttons
+        joy_msg.buttons[0] = h_msg.paddles[0].buttons[5]; // select
+        joy_msg.buttons[3] = h_msg.paddles[1].buttons[5]; // start
+
+        // top buttons
+        joy_msg.buttons[10] = h_msg.paddles[0].buttons[0]; // L1
+        joy_msg.buttons[8] = h_msg.paddles[0].trigger > 0.15; // L2
+        joy_msg.axes[8] = h_msg.paddles[0].trigger; // L2
+
+        joy_msg.buttons[11] = h_msg.paddles[1].buttons[0]; // R1
+        joy_msg.buttons[9] = h_msg.paddles[1].trigger > 0.15; // R2
+        joy_msg.axes[9] = h_msg.paddles[1].trigger; // R2
+
+        // fill in fake axes for binary buttons
+        for ( int i=4; i<8; i++ )
+        {
+          joy_msg.axes[i] = joy_msg.buttons[i] ? 1.0 : 0.0;
+        }
+        for ( int i=10; i<16; i++ )
+        {
+          joy_msg.axes[i] = joy_msg.buttons[i] ? 1.0 : 0.0;
+        }
+
+        joy_pub.publish(joy_msg);
 
         ros::spinOnce();
       }
