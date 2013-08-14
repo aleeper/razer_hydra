@@ -47,7 +47,14 @@ install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY launch DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 install(DIRECTORY config DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
-#install(FILES
-#  plugin_description.xml
-#  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
-
+# Install udev rules
+option(INSTALL_RAZER_HYDRA_UDEV_RULES "Install udev rules for Razer Hydra" ON)
+IF (INSTALL_RAZER_HYDRA_UDEV_RULES)
+  INSTALL (
+    FILES config/99-hydra.rules
+    DESTINATION "/etc/udev/rules.d"
+    COMPONENT "udev"
+    )
+else (INSTALL_RAZER_HYDRA_UDEV_RULES)
+  message (STATUS "Udev rules for Razer Hydra not being installed, install them with -DINSTALL_RAZER_HYDRA_UDEV_RULES=ON")
+endif (INSTALL_RAZER_HYDRA_UDEV_RULES)
