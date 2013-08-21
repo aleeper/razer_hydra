@@ -51,8 +51,8 @@ install(DIRECTORY config DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 option(INSTALL_RAZER_HYDRA_UDEV_RULES "Install udev rules for Razer Hydra" ON)
 IF (INSTALL_RAZER_HYDRA_UDEV_RULES)
   INSTALL (
-    FILES config/99-hydra.rules
-    DESTINATION "/etc/udev/rules.d/99-hydra-groovy.rules"
+    FILES config/99-hydra-groovy.rules
+    DESTINATION "/etc/udev/rules.d"
     COMPONENT "udev"
     )
 else (INSTALL_RAZER_HYDRA_UDEV_RULES)
