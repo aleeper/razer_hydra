@@ -4,19 +4,21 @@
   <description>Unofficial driver and ROS node for Razer Hydra</description>
   <maintainer email="adamleeper@gmail.com">Adam Leeper</maintainer>
 
-  <license></license>
+  <license>BSD</license>
 
   <url type="website">http://www.ros.org/wiki/razer_hydra</url>
-  <url type="bugtracker">https://github.com/aleeper/razer_hydra/issues</url>
+  <url type="bugtracker">https://github.com/ros-drivers/razer_hydra/issues</url>
 
   <author>Adam Leeper</author>
 
   <buildtool_depend>catkin</buildtool_depend>
-  
+
   <build_depend>libusb-1.0-dev</build_depend>
   <build_depend>pkg-config</build_depend>
   <build_depend>roscpp</build_depend>
+  <build_depend>genmsg</build_depend>
   <build_depend>message_generation</build_depend>
+  <build_depend>std_msgs</build_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>tf</build_depend>
 
@@ -24,9 +26,10 @@
 	<run_depend>pkg-config</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>message_runtime</run_depend>
+  <run_depend>std_msgs</run_depend>
   <run_depend>geometry_msgs</run_depend>
   <run_depend>tf</run_depend>
-  
+
   <export>
   </export>
 </package>
